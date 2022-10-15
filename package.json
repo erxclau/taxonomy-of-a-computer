@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "vite": "^3.1.8"
+  },
+  "dependencies": {
+    "d3-array": "^3.2.0",
+    "d3-dsv": "^3.0.1"
+  }
+}

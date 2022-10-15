@@ -1,0 +1,6 @@
+node_modules
+*.json
+*.csv
+*.txt
+
+!package.json
