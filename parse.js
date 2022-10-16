@@ -62,6 +62,7 @@ const main = async () => {
       index = search(l, dir, 0, l.length - 1);
     }
 
+    delete parent.size;
     parent.children.push({ name: d.path, size: d.size, children: [] });
   });
 
