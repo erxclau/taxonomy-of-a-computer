@@ -65,7 +65,10 @@ const main = async () => {
     parent.children.push({ name: d.path, size: d.size, children: [] });
   });
 
-  writeFileSync("hierarchy.json", JSON.stringify(h, null, 2));
+  writeFileSync(
+    "hierarchy.json",
+    JSON.stringify(h).replaceAll(',"children":[]', "")
+  );
 };
 
 main();
