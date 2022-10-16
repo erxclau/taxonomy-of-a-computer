@@ -4,8 +4,22 @@ import { ascending } from "d3-array";
 
 const depth = (path) => path.split("/").length - 1;
 
+const search = (l, s, start, end) => {
+  if (start > end) {
+    return -1;
+  }
+  const mid = Math.floor((start + end) / 2);
+  const comp = ascending(l[mid].name, s);
+  if (comp === 0) {
+    return mid;
+  } else if (comp === 1) {
+    return search(l, s, start, mid - 1);
+  } else if (comp === -1) {
+    return search(l, s, mid + 1, end);
+  }
+};
+
 const main = async () => {
-  console.time();
   const file = readFileSync("./sizes.csv").toString();
   const data = csvParse(file, autoType)
     .sort(({ path: a }, { path: b }) => {
@@ -14,8 +28,7 @@ const main = async () => {
     .map((d) => ({
       size: d.size * 512,
       path: d.path,
-    }))
-    .slice(0, 100);
+    }));
 
   const root = data.shift();
   const h = {
@@ -28,29 +41,29 @@ const main = async () => {
     let l = [h];
     let parent;
     let i = 0;
-    console.time("search");
-    while (i < l.length) {
-      const level = depth(l[i].name);
-      const dir = d.path
+
+    let dir = d.path
+      .split("/")
+      .slice(0, i + 1)
+      .join("/");
+
+    let index = search(l, dir, 0, l.length - 1);
+    while (index !== -1) {
+      parent = l[index];
+      l = l[index].children;
+
+      i++;
+      dir = d.path
         .split("/")
-        .slice(0, level + 1)
+        .slice(0, i + 1)
         .join("/");
-      console.log(d.path, dir, l[i].name, level);
-      if (dir === l[i].name) {
-        parent = l[i];
-        l = l[i].children;
-        i = 0;
-      } else {
-        i++;
-      }
+      index = search(l, dir, 0, l.length - 1);
     }
-    console.timeEnd("search");
-    console.log();
+
     parent.children.push({ name: d.path, size: d.size, children: [] });
   });
 
-  writeFileSync("linear.json", JSON.stringify(h, null, 2));
-  console.timeEnd();
+  writeFileSync("hierarchy.json", JSON.stringify(h, null, 2));
 };
 
 main();
