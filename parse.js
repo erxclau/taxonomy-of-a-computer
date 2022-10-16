@@ -2,7 +2,15 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { csvParse, autoType } from "d3-dsv";
 import { ascending } from "d3-array";
 
-const depth = (path) => path.split("/").length - 1;
+// Full depth of directory
+const fdepth = (path) => path.split("/").length - 1;
+
+// Get directory n levels deep
+const ndepth = (path, n) =>
+  path
+    .split("/")
+    .slice(0, n + 1)
+    .join("/");
 
 const search = (l, s, start, end) => {
   if (start > end) {
@@ -23,7 +31,7 @@ const main = async () => {
   const file = readFileSync("./sizes.csv").toString();
   const data = csvParse(file, autoType)
     .sort(({ path: a }, { path: b }) => {
-      return ascending(depth(a), depth(b)) || ascending(a, b);
+      return ascending(fdepth(a), fdepth(b)) || ascending(a, b);
     })
     .map((d) => ({
       size: d.size * 512,
@@ -38,25 +46,19 @@ const main = async () => {
   };
 
   data.forEach((d) => {
-    let l = [h];
     let parent;
-    let i = 0;
+    let l = [h];
 
-    let dir = d.path
-      .split("/")
-      .slice(0, i + 1)
-      .join("/");
-
+    let depth = 0;
+    let dir = ndepth(d.path, depth);
     let index = search(l, dir, 0, l.length - 1);
+
     while (index !== -1) {
       parent = l[index];
       l = l[index].children;
 
-      i++;
-      dir = d.path
-        .split("/")
-        .slice(0, i + 1)
-        .join("/");
+      depth++;
+      dir = ndepth(d.path, depth);
       index = search(l, dir, 0, l.length - 1);
     }
 
