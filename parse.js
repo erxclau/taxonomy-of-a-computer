@@ -1,6 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { csvParse, autoType } from "d3-dsv";
-import { ascending } from "d3-array";
+import { csvParse, autoType, ascending } from "d3";
 
 // Full depth of directory
 const fdepth = (path) => path.split("/").length - 1;
@@ -28,7 +27,7 @@ const search = (l, s, start, end) => {
 };
 
 const main = async () => {
-  const file = readFileSync("./sizes.csv").toString();
+  const file = readFileSync("./files.csv").toString();
   const data = csvParse(file, autoType)
     .sort(({ path: a }, { path: b }) => {
       return ascending(fdepth(a), fdepth(b)) || ascending(a, b);
