@@ -1,8 +1,6 @@
 import {
-  json,
   hierarchy,
   select,
-  selectAll,
   treemap,
   treemapSquarify,
   descending,
@@ -10,9 +8,9 @@ import {
   transition,
   easeLinear,
   format,
-  sum,
 } from "d3";
 import scrollama from "scrollama";
+import data from "../hierarchy.json";
 
 const figure = select("figure");
 const caption = figure.select("figcaption code");
@@ -183,10 +181,6 @@ const draw = (data, depth, down) => {
 };
 
 window.onload = async () => {
-  const data = await json("./hierarchy.json");
-
-  console.log(data);
-
   const workspace = data.children.find(({ name }) => name === "./workspace");
 
   const projects = workspace.children.find(
@@ -223,10 +217,6 @@ window.onload = async () => {
         select("#legend").style("display", "flex");
       }
       draw(d, l, direction === "down");
-
-      console.log(
-        sum(selectAll("rect[type='data']").data(), (d) => d.data.size)
-      );
       steps.classed("is-active", function (_, i) {
         return i === index;
       });
