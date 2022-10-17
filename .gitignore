@@ -4,5 +4,6 @@ node_modules
 *.txt
 
 !package.json
+!config.json
 dist
 
