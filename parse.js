@@ -73,7 +73,11 @@ const main = async () => {
         parent.name === "./workspace/projects/messenger-data-viz/messages" ||
         parent.name.endsWith("/.git") ||
         parent.name.endsWith("/node_modules") ||
-        parent.name.endsWith("/venv")
+        parent.name.endsWith("/venv") ||
+        parent.name.endsWith("/.parcel-cache") ||
+        parent.name.endsWith("/.next") ||
+        parent.name.endsWith("/.cache") ||
+        parent.name.endsWith("/dist")
       ) {
         delete parent.children;
       } else {

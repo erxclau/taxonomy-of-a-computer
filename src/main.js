@@ -2,23 +2,27 @@ import {
   json,
   hierarchy,
   select,
+  selectAll,
   treemap,
   treemapSquarify,
   descending,
-  ascending,
+  scaleOrdinal,
   transition,
   easeLinear,
-  sum,
   format,
+  sum,
 } from "d3";
 import scrollama from "scrollama";
 
 const figure = select("figure");
-const caption = figure.select("figcaption");
+const caption = figure.select("figcaption code");
 const width = figure.node().clientWidth;
-const height = figure.style("height").replace("px", "");
+const height = 500;
 
-const svg = figure.append("svg").attr("width", width).attr("height", height);
+const svg = figure
+  .select("#graphic")
+  .attr("width", width)
+  .attr("height", height);
 
 const tree = treemap()
   .tile(treemapSquarify)
@@ -49,8 +53,6 @@ const own = (d) => {
   );
 };
 
-const oo = (n) => !n.endsWith("/node_modules") && own(n);
-
 const b = format(".2s");
 
 const size = (root) => {
@@ -65,18 +67,42 @@ const size = (root) => {
   }
 };
 
-const draw = (data, depth) => {
-  caption.text(`${data.name} - ${b(size(data))}B`);
-  const c = (d) => (own(d) ? "steelblue" : "lightgray");
+const isDataFile = (name) =>
+  name.endsWith(".txt") ||
+  name.endsWith(".json") ||
+  name.endsWith(".shp") ||
+  name.endsWith(".geojson") ||
+  name.endsWith(".csv") ||
+  name.endsWith(".tsv") ||
+  name.endsWith(".gdb.zip") ||
+  name === "./workspace/projects/messenger-data-viz/messages" ||
+  name === "./workspace/projects/messenger-data-viz/facebook-erxclau.zip";
+
+const areDependencies = (name) =>
+  name.endsWith("node_modules") ||
+  name.endsWith("venv") ||
+  name === "./.expo" ||
+  name === "./.npm" ||
+  name === "./.amplify" ||
+  name === "./.nvm" ||
+  name === "./google-cloud-sdk";
+
+const areOther = (name) =>
+  name.endsWith(".git") ||
+  name.endsWith("venv") ||
+  name.endsWith(".parcel-cache") ||
+  name.endsWith(".next") ||
+  name.endsWith("dist") ||
+  name.endsWith(".cache");
+
+const draw = (data, depth, down) => {
+  const cp = `${data.name} - ${b(size(data))}B`;
+  caption.text(cp);
 
   const root = tree(
     hierarchy(data)
       .sum((d) => d.size)
-      .sort(
-        (a, b) =>
-          descending(a.data.size, b.data.size) ||
-          ascending(oo(a.data.name), oo(b.data.name))
-      )
+      .sort((a, b) => descending(a.data.size, b.data.size))
   );
 
   const t = (duration, delay) =>
@@ -95,6 +121,24 @@ const draw = (data, depth) => {
 
   leaf.exit().remove();
 
+  const color = scaleOrdinal()
+    .domain(["data", "dependencies", "own", "other"])
+    .range(["indigo", "maroon", "steelblue", "lightgray"]);
+
+  const type = (name) => {
+    if (isDataFile(name)) {
+      return "data";
+    } else if (areDependencies(name)) {
+      return "dependencies";
+    } else if (areOther(name)) {
+      return "other";
+    } else if (own(ndepth(name, depth + 1))) {
+      return "own";
+    } else {
+      return "other";
+    }
+  };
+
   const rect = leaf
     .selectAll("rect")
     .data(
@@ -107,36 +151,41 @@ const draw = (data, depth) => {
           .append("rect")
           .attr("name", (d) => d.data.name)
           .attr("size", (d) => d.data.size)
+          .attr("type", (d) => type(d.data.name))
           .attr("width", (d) => d.x1 - d.x0)
           .transition(t(1000, 1000))
           .attr("stroke", "white")
           .attr("stroke-width", 0.5)
           .attr("fill", "transparent")
           .attr("height", (d) => d.y1 - d.y0)
-          .attr("fill", (d) => {
-            if (d.data.name.endsWith("node_modules")) {
-              return "lightgray";
-            }
-            return c(ndepth(d.data.name, depth + 1));
-          }),
+          .attr("fill", (d) => color(type(d.data.name))),
       (update) =>
         update
           .transition(t(1000, 0))
           .attr("width", (d) => d.x1 - d.x0)
           .attr("height", (d) => d.y1 - d.y0)
-          .attr("fill", (d) => {
-            if (d.data.name.endsWith("node_modules")) {
-              return "lightgray";
-            }
-            return c(ndepth(d.data.name, depth + 1));
-          })
+          .attr("fill", (d) => color(type(d.data.name)))
+          .attr("fill-opacity", down ? 0.5 : 1)
     );
 
   rect.exit().transition(t(1000, 0)).attr("width", 0).remove();
+
+  rect.on("mouseenter", function () {
+    const s = select(this);
+    const d = s.datum().data;
+    const t = type(d.name);
+    caption.text(`${d.name} - ${b(d.size)}B - ${t.toLocaleUpperCase()}`);
+  });
+
+  rect.on("mouseleave", () => {
+    caption.text(cp);
+  });
 };
 
 window.onload = async () => {
   const data = await json("./hierarchy.json");
+
+  console.log(data);
 
   const workspace = data.children.find(({ name }) => name === "./workspace");
 
@@ -168,9 +217,16 @@ window.onload = async () => {
       offset: 0.5,
       debug: false,
     })
-    .onStepEnter(({ index }) => {
+    .onStepEnter(({ index, direction }) => {
       const { data: d, level: l } = step[index];
-      draw(d, l);
+      if (index >= 1) {
+        select("#legend").style("display", "flex");
+      }
+      draw(d, l, direction === "down");
+
+      console.log(
+        sum(selectAll("rect[type='data']").data(), (d) => d.data.size)
+      );
       steps.classed("is-active", function (_, i) {
         return i === index;
       });
