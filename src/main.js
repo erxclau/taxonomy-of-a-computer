@@ -121,7 +121,7 @@ const draw = (data, depth, down) => {
 
   const color = scaleOrdinal()
     .domain(["data", "dependencies", "own", "other"])
-    .range(["indigo", "maroon", "steelblue", "lightgray"]);
+    .range(["#73A348", "#A34021", "#4E6CF5", "lightgray"]);
 
   const type = (name) => {
     if (isDataFile(name)) {
