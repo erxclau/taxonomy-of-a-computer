@@ -56,13 +56,31 @@ const main = async () => {
       parent = l[index];
       l = l[index].children;
 
+      if (l === undefined) {
+        break;
+      }
+
       depth++;
       dir = ndepth(d.path, depth);
       index = search(l, dir, 0, l.length - 1);
     }
 
-    delete parent.size;
-    parent.children.push({ name: d.path, size: d.size, children: [] });
+    if (!parent.name.startsWith("./workspace") && parent.name !== ".") {
+      delete parent.children;
+    } else {
+      if (
+        parent.name === "./workspace/projects/letter" ||
+        parent.name === "./workspace/projects/messenger-data-viz/messages" ||
+        parent.name.endsWith("/.git") ||
+        parent.name.endsWith("/node_modules") ||
+        parent.name.endsWith("/venv")
+      ) {
+        delete parent.children;
+      } else {
+        delete parent.size;
+        parent.children.push({ name: d.path, size: d.size, children: [] });
+      }
+    }
   });
 
   writeFileSync(
